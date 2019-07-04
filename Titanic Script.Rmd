@@ -1,0 +1,50 @@
+---
+title: "Titanic"
+author: "Chen Shih-Chieh"
+date: "July 4, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+This analysis takes a lot of inspiration from the Titanic data set tutorial on kaggle. I've recently gotten into machine learning and this will be for practicing what I've learned
+
+
+Loading the scripts
+
+```{r, results = hide}
+library(tidyverse) #data maniplulation, visualization, etc
+library(caret) #model creation
+library(randomForest) #model creation
+
+train_dat <- read.csv("dat/train.csv")
+test_dat <- read.csv("dat/test.csv")
+```
+
+Taking a look at the data
+
+```{r}
+str(train_dat)
+```
+
+
+The names variable seems to be able to be broken down into other lables, e.g. ms, miss, doctor, mr. 
+Taking a look at the Names variable. There are a lot of observations so I'm  just going to look at a subset of them.
+```{r, results = hide}
+train_dat$Name[sample(1:nrow(train_dat), 100)]
+```
+
+It seems that a persons title can be extracted fairly easily.
+```{r}
+train_dat$title <- train_dat$Name %>%
+  str_match(., ", ([:alpha:]*)\\.") %>% .[,2] %>% factor
+```
+
+Taking a look at how many different titles we have. 
+```{r}
+str(train_dat$title) #there seems to be 18 different titles
+levels(train_dat$title)
+table(train_dat$title) #taking a look at the distribution
+```
+
