@@ -97,3 +97,4 @@ Looking at the data, there are many missing values for Age.
 colSums(is.na(train_dat))
 ```
 
+Filling in the missing age values by computing them. Using mice, aka multiple imputation by chained equation. 
