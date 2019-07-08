@@ -13,7 +13,7 @@ This analysis takes a lot of inspiration from the Titanic data set tutorial on k
 
 Loading the scripts
 
-```{r, results = hide}
+```{r, results = "hide", warning=FALSE, message=FALSE}
 library(tidyverse) #data maniplulation, visualization, etc
 library(caret) #model creation
 library(randomForest) #model creation
@@ -31,20 +31,69 @@ str(train_dat)
 
 The names variable seems to be able to be broken down into other lables, e.g. ms, miss, doctor, mr. 
 Taking a look at the Names variable. There are a lot of observations so I'm  just going to look at a subset of them.
-```{r, results = hide}
+```{r, results = "hide"}
 train_dat$Name[sample(1:nrow(train_dat), 100)]
 ```
 
 It seems that a persons title can be extracted fairly easily.
 ```{r}
 train_dat$title <- train_dat$Name %>%
-  str_match(., ", ([:alpha:]*)\\.") %>% .[,2] %>% factor
+  str_match(., ", (([:alpha:]|\\s)*)\\.") %>% .[,2]
 ```
 
 Taking a look at how many different titles we have. 
 ```{r}
 str(train_dat$title) #there seems to be 18 different titles
-levels(train_dat$title)
 table(train_dat$title) #taking a look at the distribution
+```
+
+Lets reassign the titles mlle, ms, and mme and group together titles that are rare
+```{r}
+train_dat$title[train_dat$title == "Mlle"] <- "Miss"
+train_dat$title[train_dat$title == "Ms"] <- "Miss"
+train_dat$title[train_dat$title == "Mme"] <- "Mrs"
+
+rare_titles <- c("Capt", "Col", "Don", "Dr", "Lady", "Major", "Rev", "Sir", "Jonkheer", "the Countess")
+train_dat$title[train_dat$title %in% rare_titles] <- "Rare Title"
+```
+
+Out of curiosity, taking a look at the distribution on survival and title
+
+```{r}
+train_dat %>% ggplot(aes(title, fill = factor(Survived))) +
+  geom_bar(stat = "count", position = "dodge")
+```
+
+Next, lets see how family size affects survival
+```{r}
+#calculating family size
+train_dat$fullfamily <- train_dat$SibSp + train_dat$Parch + 1 
+train_dat %>% ggplot(aes(fullfamily, fill = factor(Survived))) +
+  geom_bar(stat = "count", position = "dodge")
+```
+
+Lets group people into 3 parts. Singeton, small family, and large family. First the break down of data points in each group.
+
+```{r}
+table(train_dat$Survived, train_dat$fullfamily)
+table(train_dat$Survived, train_dat$fullfamily)[2,]/colSums(table(train_dat$Survived, train_dat$fullfamily))
+```
+
+
+Looks there theres a difference between the survival rate if a person is by themselves, with a family of 1 to 3, and with a family of 4 or more. So the family is divided that way.
+```{r}
+ train_dat$FamilySize[train_dat$fullfamily == 1] <- "Singleton"
+ train_dat$FamilySize[train_dat$fullfamily > 1 & train_dat$fullfamily < 5] <- "Small Family"
+ train_dat$FamilySize[train_dat$fullfamily >= 5] <- "Large Family"
+```
+
+Is there a difference in survivability and what deck someones room is at? Extracting deck letter from the cabin number.
+```{r}
+train_dat$Deck <- train_dat$Cabin %>% str_match("[:alpha:]")
+```
+
+Looking at the data, there are many missing values for Age.
+```{r}
+colSums(is.na(train_dat))
 ```
 
